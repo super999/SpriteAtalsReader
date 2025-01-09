@@ -85,23 +85,29 @@ class SpriteApp(QMainWindow):
 
     def on_start(self):
         """点击按钮 - 开始执行处理流程"""
-        # 先从输入框更新当前的 json_file_dir_path 和 raw_dds_path
+        self._update_paths_from_input()
+        if not self._validate_paths():
+            return
+        self.save_settings()
+        self._process_files()
+
+    def _update_paths_from_input(self):
+        """从输入框更新当前的 json_file_dir_path 和 raw_dds_path"""
         self.json_file_dir_path = self.ui.lineEdit_json_dir.text().strip()
         self.raw_dds_path = self.ui.lineEdit_dds_file.text().strip()
 
-        # 检查是否有效
+    def _validate_paths(self) -> bool:
+        """检查路径是否有效"""
         if not self.json_file_dir_path or not os.path.isdir(self.json_file_dir_path):
-            # 也可以弹出提示框
             print("Json目录无效，请重新选择或输入！")
-            return
-
+            return False
         if not self.raw_dds_path or not os.path.isfile(self.raw_dds_path):
             print("dds文件无效，请重新选择或输入！")
-            return
+            return False
+        return True
 
-        # 保存到 settings
-        self.save_settings()
-
+    def _process_files(self):
+        """处理文件"""
         try:
             self.read_dds()
             self.adv_read_sprite()
@@ -134,43 +140,42 @@ class SpriteApp(QMainWindow):
                 file_path = os.path.join(root, file)
                 if not file_path.lower().endswith(".json"):
                     continue
+                self._process_json_file(file_path, relative_path)
 
-                print(f'正在处理文件: {file_path}')
-                with open(file_path, 'r', encoding='utf-8') as f:
-                    json_obj = json.load(f)
+    def _process_json_file(self, file_path: str, relative_path: str):
+        """处理单个Json文件"""
+        print(f'正在处理文件: {file_path}')
+        with open(file_path, 'r', encoding='utf-8') as f:
+            json_obj = json.load(f)
+            sprite_info = self._create_sprite_info(json_obj)
+            rotation_value = (sprite_info.rd['m_SettingsRaw'] >> 2) & 0xF
+            self._log_rotation_info(rotation_value, sprite_info.name)
+            self._draw_shapes_on_image(sprite_info)
+            sprite_img = self._crop_and_transform_sprite(sprite_info, rotation_value)
+            self._save_sprite_image(sprite_img, relative_path, sprite_info)
 
-                    name = json_obj['m_Name']
-                    pivot = json_obj['m_Pivot']
-                    physics_shape = json_obj['m_PhysicsShape']
-                    all_shapes = [[vertex for vertex in shape] for shape in physics_shape]
+    def _create_sprite_info(self, json_obj: dict) -> SpriteInfo:
+        """从Json对象创建SpriteInfo"""
+        name = json_obj['m_Name']
+        pivot = json_obj['m_Pivot']
+        physics_shape = json_obj['m_PhysicsShape']
+        rect = json_obj['m_Rect']
+        rd = json_obj['m_RD']
+        return self.SpriteInfo(name, pivot, physics_shape, rect, rd)
 
-                    rect = json_obj['m_Rect']
-                    rd = json_obj['m_RD']
-                    setting_raw = rd['m_SettingsRaw']
-
-                    sprite_info = self.SpriteInfo(name, pivot, physics_shape, rect, rd)
-
-                    rotation_value = (setting_raw >> 2) & 0xF
-                    self._log_rotation_info(rotation_value, name)
-
-                    p_x, p_y = pivot['m_X'], pivot['m_Y']
-
-                    pivot_abs_x, pivot_abs_y = sprite_info.r_w * p_x, sprite_info.r_h * p_y
-                    paste_x, paste_y = int(256 - pivot_abs_x), int(256 - pivot_abs_y)
-
-                    self._draw_shapes_on_image(sprite_info)
-
-                    sprite_img = self._crop_and_transform_sprite(sprite_info, rotation_value)
-
-                    is_center_align = self.ui.checkBoxCenterAndResize256.isChecked()
-                    save_img, relative_output_folder = self._create_canvas_and_draw(sprite_img, paste_x, paste_y,
-                                                                                    all_shapes, is_center_align,
-                                                                                    relative_path, sprite_info)
-
-                    os.makedirs(relative_output_folder, exist_ok=True)
-                    sprite_output_path = os.path.join(relative_output_folder, f'{name}.png')
-                    save_img.save(sprite_output_path)
-                    print(f"保存单独的精灵图片: {sprite_output_path}")
+    def _save_sprite_image(self, sprite_img: Image, relative_path: str, sprite_info: SpriteInfo):
+        """保存精灵图像"""
+        is_center_align = self.ui.checkBoxCenterAndResize256.isChecked()
+        save_img, relative_output_folder = self._create_canvas_and_draw(
+            sprite_img, int(256 - sprite_info.r_w * sprite_info.pivot['m_X']),
+            int(256 - sprite_info.r_h * sprite_info.pivot['m_Y']),
+            [[vertex for vertex in shape] for shape in sprite_info.physics_shape],
+            is_center_align, relative_path, sprite_info
+        )
+        os.makedirs(relative_output_folder, exist_ok=True)
+        sprite_output_path = os.path.join(relative_output_folder, f'{sprite_info.name}.png')
+        save_img.save(sprite_output_path)
+        print(f"保存单独的精灵图片: {sprite_output_path}")
 
     @staticmethod
     def _log_rotation_info(rotation_value, name):
