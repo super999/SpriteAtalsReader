@@ -14,4 +14,8 @@
    pip install -r requirements.txt
 
 
+# 编译
 pyside6-uic sprite_editor/ui/mainwindow.ui -o sprite_editor/ui_compiled/ui_mainwindow.py
+
+# 编辑
+pyside6-designer
