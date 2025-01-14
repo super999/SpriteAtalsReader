@@ -168,4 +168,13 @@ cython_debug/
 #.idea/
 
 # PyPI configuration file
+
+
+
+# Path: 项目忽略文件
 .pypirc
+/output_paste
+/output_keep
+/output
+/flip_output
+/data

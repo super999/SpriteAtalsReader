@@ -5,7 +5,6 @@ name: Python application
 
 on:
   workflow_dispatch:  # 手动触发
-  # 你可以同时保留其他触发方式，比如 push 或 pull_request
   push:
     branches: [ "main" ]
   pull_request:

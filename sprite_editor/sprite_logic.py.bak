@@ -1,0 +1,291 @@
+#!/usr/bin/python
+# -*- coding: utf-8 -*-
+# @Time    : 2025/1/9 11:24
+# @Author  : ChenXiaWen
+# @File    : sprite_logic.py
+
+
+"""
+与 DDS/Json 处理相关的主要逻辑，继承自 QMainWindow，用 PySide6 的控件做界面
+包含：
+1. 一个 QLineEdit 手动输入/显示 Json 目录
+2. 一个 QLineEdit 手动输入/显示 dds 文件
+3. 选择按钮也会同步更新输入框
+4. 使用 QSettings 保存/读取上次的输入
+"""
+
+import os
+import json
+from PIL import Image, ImageDraw
+from PySide6.QtWidgets import (
+    QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
+    QPushButton, QLabel, QFileDialog, QLineEdit
+)
+from PySide6.QtCore import Qt, QSettings
+
+class Pic:
+    """存储图像相关的信息"""
+    def __init__(self):
+        self.img = None
+        self.draw = None
+        self.copy_img = None
+        self.raw_img = None
+
+class SpriteApp(QMainWindow):
+    """主窗口，含UI与处理逻辑"""
+    def __init__(self):
+        super().__init__()
+        self.setWindowTitle("Sprite处理程序 - PySide6示例")
+        self.resize(600, 200)
+
+        self.json_file_dir_path = ""
+        self.raw_dds_path = ""
+
+        self.pic_obj = Pic()
+
+        # 是否绘制边框与坐标轴，可以根据需求改成复选框等
+        self.enable_draw_rect = False
+        self.enable_draw_axis = False
+
+        # 先加载上一次保存的设置(如果有的话)
+        self.settings = QSettings("MyCompany", "SpriteEditorApp")
+        self.load_settings()
+
+        self.initUI()
+
+    def initUI(self):
+        """初始化界面布局"""
+        central_widget = QWidget()
+        self.setCentralWidget(central_widget)
+        main_layout = QVBoxLayout(central_widget)
+
+        # ----------------------
+        # 行1：Json目录
+        # ----------------------
+        h_layout_1 = QHBoxLayout()
+        # 按钮 - 选择Json目录
+        self.btn_select_json_dir = QPushButton("选择Json目录")
+        self.btn_select_json_dir.clicked.connect(self.on_select_json_dir)
+        h_layout_1.addWidget(self.btn_select_json_dir)
+
+        # 输入框 - 手工输入 / 显示 Json目录
+        self.lineedit_json_dir = QLineEdit()
+        self.lineedit_json_dir.setPlaceholderText("在此处输入或点击右侧按钮选择 Json 目录")
+        self.lineedit_json_dir.setText(self.json_file_dir_path)  # 恢复上次记录
+        h_layout_1.addWidget(self.lineedit_json_dir)
+
+        main_layout.addLayout(h_layout_1)
+
+        # ----------------------
+        # 行2：dds文件
+        # ----------------------
+        h_layout_2 = QHBoxLayout()
+        # 按钮 - 选择dds文件
+        self.btn_select_dds_file = QPushButton("选择dds文件")
+        self.btn_select_dds_file.clicked.connect(self.on_select_dds_file)
+        h_layout_2.addWidget(self.btn_select_dds_file)
+
+        # 输入框 - 手工输入 / 显示 dds文件路径
+        self.lineedit_dds_file = QLineEdit()
+        self.lineedit_dds_file.setPlaceholderText("在此处输入或点击右侧按钮选择 dds 文件")
+        self.lineedit_dds_file.setText(self.raw_dds_path)  # 恢复上次记录
+        h_layout_2.addWidget(self.lineedit_dds_file)
+
+        main_layout.addLayout(h_layout_2)
+
+        # ----------------------
+        # 行3：开始处理
+        # ----------------------
+        h_layout_3 = QHBoxLayout()
+        self.btn_start = QPushButton("开始处理")
+        self.btn_start.clicked.connect(self.on_start)
+        h_layout_3.addWidget(self.btn_start)
+        main_layout.addLayout(h_layout_3)
+
+    def load_settings(self):
+        """从 QSettings 中加载上一次的目录路径和dds文件路径"""
+        self.json_file_dir_path = self.settings.value("json_file_dir_path", "")
+        self.raw_dds_path = self.settings.value("raw_dds_path", "")
+
+    def save_settings(self):
+        """把当前的目录和文件路径写入 QSettings"""
+        self.settings.setValue("json_file_dir_path", self.json_file_dir_path)
+        self.settings.setValue("raw_dds_path", self.raw_dds_path)
+
+    def on_select_json_dir(self):
+        """点击按钮 - 选择json文件夹"""
+        directory = QFileDialog.getExistingDirectory(self, "选择Json目录", self.json_file_dir_path or "")
+        if directory:
+            self.json_file_dir_path = directory
+            self.lineedit_json_dir.setText(directory)
+
+    def on_select_dds_file(self):
+        """点击按钮 - 选择dds文件"""
+        file_path, _ = QFileDialog.getOpenFileName(self, "选择dds文件", self.raw_dds_path or "",
+                                                   "DDS Files (*.dds);;All Files (*)")
+        if file_path:
+            self.raw_dds_path = file_path
+            self.lineedit_dds_file.setText(file_path)
+
+    def on_start(self):
+        """点击按钮 - 开始执行处理流程"""
+        # 先从输入框更新当前的 json_file_dir_path 和 raw_dds_path
+        self.json_file_dir_path = self.lineedit_json_dir.text().strip()
+        self.raw_dds_path = self.lineedit_dds_file.text().strip()
+
+        # 检查是否有效
+        if not self.json_file_dir_path or not os.path.isdir(self.json_file_dir_path):
+            # 也可以弹出提示框
+            print("Json目录无效，请重新选择或输入！")
+            return
+
+        if not self.raw_dds_path or not os.path.isfile(self.raw_dds_path):
+            print("dds文件无效，请重新选择或输入！")
+            return
+
+        # 保存到 settings
+        self.save_settings()
+
+        try:
+            self.read_dds()
+            self.adv_read_sprite()
+        except Exception as e:
+            print(f"处理异常: {e}")
+
+    def read_dds(self):
+        """读取DDS文件"""
+        img = Image.open(self.raw_dds_path)
+        raw_img = img.copy()
+        self.pic_obj.img = raw_img
+        self.pic_obj.copy_img = img.copy()
+        self.pic_obj.draw = ImageDraw.Draw(self.pic_obj.copy_img)
+        self.pic_obj.raw_img = raw_img
+        print("DDS文件读取完成。")
+
+    def adv_read_sprite(self):
+        """遍历并处理目录下的Json信息，切割并保存精灵图"""
+        for root, dirs, files in os.walk(self.json_file_dir_path):
+            relative_path = os.path.relpath(root, self.json_file_dir_path)
+            for file in files:
+                file_path = os.path.join(root, file)
+                if not file_path.lower().endswith(".json"):
+                    continue
+
+                print(f'正在处理文件: {file_path}')
+                with open(file_path, 'r', encoding='utf-8') as f:
+                    json_obj = json.load(f)
+
+                    name = json_obj['m_Name']
+                    offset = json_obj['m_Offset']
+                    pivot = json_obj['m_Pivot']
+
+                    physics_shape = json_obj['m_PhysicsShape']
+                    all_shapes = []
+                    for shape in physics_shape:
+                        all_vertex = []
+                        for vertex in shape:
+                            all_vertex.append(vertex)
+                        all_shapes.append(all_vertex)
+
+                    rect = json_obj['m_Rect']
+                    r_x = rect['m_X']
+                    r_y = rect['m_Y']
+                    r_w = rect['m_Width']
+                    r_h = rect['m_Height']
+
+                    rd = json_obj['m_RD']
+                    setting_raw = rd['m_SettingsRaw']
+
+                    # 提取旋转/翻转信息
+                    rotation_value = (setting_raw >> 2) & 0xF
+                    if rotation_value != 0:
+                        print(f"rotation_value:{rotation_value}, 文件名:{name}")
+                        if rotation_value == 1:
+                            print("水平翻转")
+                        elif rotation_value == 2:
+                            print("垂直翻转")
+                        elif rotation_value == 3:
+                            print("旋转180度")
+                        elif rotation_value == 4:
+                            print("旋转90度")
+
+                    p_x = pivot['m_X']
+                    p_y = pivot['m_Y']
+
+                    # 计算枢轴点在自身图像中的像素位置
+                    pivot_abs_x = r_w * p_x
+                    pivot_abs_y = r_h * p_y
+
+                    # 粘贴位置（使枢轴点在新画布中心）
+                    paste_x = int(256 - pivot_abs_x)
+                    paste_y = int(256 - pivot_abs_y)
+
+                    # 在原图上画一个红色矩形（可选）
+                    if self.enable_draw_rect:
+                        self.pic_obj.draw.rectangle(
+                            [r_x, r_y, r_x + r_w, r_y + r_h],
+                            outline="red"
+                        )
+
+                    # 在原图上画圆点（可选）
+                    point_radius = 5
+                    self.pic_obj.draw.ellipse(
+                        [r_x - point_radius, r_y - point_radius,
+                         r_x + point_radius, r_y + point_radius],
+                        fill="yellow"
+                    )
+
+                    # 裁剪精灵图像
+                    sprite_img = self.pic_obj.raw_img.crop((r_x, r_y, r_x + r_w, r_y + r_h))
+
+                    # 根据 rotation_value 进行翻转或旋转
+                    if rotation_value == 1:
+                        sprite_img = sprite_img.transpose(Image.FLIP_LEFT_RIGHT)
+                    elif rotation_value == 2:
+                        sprite_img = sprite_img.transpose(Image.FLIP_TOP_BOTTOM)
+                    elif rotation_value == 3:
+                        sprite_img = sprite_img.transpose(Image.ROTATE_180)
+                    elif rotation_value == 4:
+                        sprite_img = sprite_img.transpose(Image.ROTATE_90)
+
+                    # 创建新画布
+                    new_canvas = Image.new("RGBA", (512, 512), (0, 0, 0, 0))
+                    new_canvas.paste(sprite_img, (paste_x, paste_y), sprite_img)
+
+                    # 在 new_canvas 画坐标轴
+                    if self.enable_draw_axis:
+                        canvas_draw = ImageDraw.Draw(new_canvas)
+                        canvas_draw.line([256, 0, 256, 512], fill="red")
+                        canvas_draw.line([0, 256, 512, 256], fill="red")
+
+                    # 在 new_canvas 画碰撞形状
+                    if self.enable_draw_rect:
+                        canvas_draw = ImageDraw.Draw(new_canvas)
+                        for shape in all_shapes:
+                            for i in range(len(shape)):
+                                cur_vertex = shape[i]
+                                next_vertex = shape[(i + 1) % len(shape)]
+                                start_x = cur_vertex['m_X'] * r_w + 256
+                                start_y = cur_vertex['m_Y'] * r_h + 256
+                                end_x = next_vertex['m_X'] * r_w + 256
+                                end_y = next_vertex['m_Y'] * r_h + 256
+                                canvas_draw.line(
+                                    [start_x, start_y, end_x, end_y],
+                                    fill="green"
+                                )
+
+                    # 做一个垂直翻转，使Y轴正向一致（可根据需要决定）
+                    flipped_img = new_canvas.transpose(Image.FLIP_TOP_BOTTOM)
+
+                    # 保存图片
+                    relative_output_folder = os.path.join('output_paste', relative_path)
+                    os.makedirs(relative_output_folder, exist_ok=True)
+                    sprite_output_path = os.path.join(relative_output_folder, f'{name}.png')
+                    flipped_img.save(sprite_output_path)
+                    print(f"保存单独的精灵图片: {sprite_output_path}")
+
+        # 最后保存整张标记过的图
+        os.makedirs("output", exist_ok=True)
+        output_path = os.path.join("output", "sprite_with_rectangles.png")
+        self.pic_obj.copy_img.save(output_path)
+        print(f"全部处理完成，保存到: {output_path}")

@@ -25,6 +25,7 @@ from PySide6.QtWidgets import (
     QMainWindow, QFileDialog, QMessageBox
 )
 
+from sprite_editor.dialog_png_name_fix import DialogPngNameFix
 from sprite_editor.ui_compiled.ui_mainwindow import Ui_MainWindow
 
 
@@ -51,6 +52,11 @@ class CanvasConfig:
 canvas_config = CanvasConfig()
 
 
+class JsonFileContainer:
+    def __init__(self):
+        self.json_file_paths = []
+
+
 class SpriteApp(QMainWindow):
     """主窗口，含UI与处理逻辑"""
     raw_dds_path: str
@@ -64,16 +70,27 @@ class SpriteApp(QMainWindow):
         self.enable_draw_axis = True
         self.enable_origin_draw_rect_and_point = False
         # 先加载上一次保存的设置(如果有的话)
-        self.settings = QSettings("MyCompany", "SpriteEditorApp")
+        self.settings = QSettings("Super999", "SpriteEditorApp-MainWindow")
         self.load_settings()
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
         # 回填上次的路径
+        self._initialize_ui()
+
+    def _initialize_ui(self):
+        """初始化UI组件和信号槽连接"""
         self.ui.lineEdit_json_dir.setText(self.json_file_dir_path)
         self.ui.lineEdit_dds_file.setText(self.raw_dds_path)
+        self._connect_signals()
+
+    def _connect_signals(self):
+        """连接信号和槽"""
         self.ui.pushButton_start.clicked.connect(self.on_start)
         self.ui.pushButton_select_json_dir.clicked.connect(self.on_select_json_dir)
         self.ui.pushButton_select_dds_file.clicked.connect(self.on_select_dds_file)
+        self.ui.pushButton_open_output_dir.clicked.connect(self.on_open_output_dir)
+        #
+        self.ui.actionname_fix.triggered.connect(self.on_open_name_fix_window)
 
     def load_settings(self):
         """从 QSettings 中加载上一次的目录路径和dds文件路径"""
@@ -99,6 +116,11 @@ class SpriteApp(QMainWindow):
         if file_path:
             self.raw_dds_path = file_path
             self.ui.lineEdit_dds_file.setText(file_path)
+
+    def on_open_output_dir(self):
+        """点击按钮 - 打开输出目录"""
+        output_dir = os.path.join(os.path.dirname(self.json_file_dir_path), "output")
+        os.startfile(output_dir)
 
     def on_start(self):
         """点击按钮 - 开始执行处理流程"""
@@ -178,7 +200,6 @@ class SpriteApp(QMainWindow):
                     continue
                 self._process_json_file(file_path, relative_path)
 
-
     def _process_json_file(self, file_path: str, relative_path: str):
         """处理单个Json文件"""
         print(f'正在处理文件: {file_path}')
@@ -190,7 +211,6 @@ class SpriteApp(QMainWindow):
             self._draw_shapes_on_image(sprite_info)
             sprite_img = self._crop_and_transform_sprite(sprite_info, rotation_value)
             self._save_sprite_image(sprite_img, relative_path, sprite_info)
-
 
     def _create_sprite_info(self, json_obj: dict) -> SpriteInfo:
         """从Json对象创建SpriteInfo"""
@@ -232,7 +252,8 @@ class SpriteApp(QMainWindow):
     def _draw_shapes_on_image(self, sprite_info):
         if self.enable_origin_draw_rect_and_point:
             self.pic_obj.raw_img_draw.rectangle(
-                [sprite_info.r_x, sprite_info.r_y, sprite_info.r_x + sprite_info.r_w, sprite_info.r_y + sprite_info.r_h],
+                [sprite_info.r_x, sprite_info.r_y, sprite_info.r_x + sprite_info.r_w,
+                 sprite_info.r_y + sprite_info.r_h],
                 outline="red"
             )
 
@@ -287,7 +308,7 @@ class SpriteApp(QMainWindow):
             relative_output_folder = os.path.join('output_keep', relative_path)
         return save_img, relative_output_folder
 
-    def save_whole_image(self, relative_path:str):
+    def save_whole_image(self, relative_path: str):
         # 上下翻转
         save_img = self.pic_obj.img.transpose(Image.Transpose.FLIP_TOP_BOTTOM)
         output_path = os.path.join('output', relative_path, "sprite_with_rectangles.png")
@@ -295,3 +316,9 @@ class SpriteApp(QMainWindow):
         os.makedirs(output_dir_path, exist_ok=True)
         save_img.save(output_path)
         print(f"全部处理完成，保存到: {output_path}")
+
+    def on_open_name_fix_window(self):
+        """打开名字修正窗口"""
+        dialog_png_name_fix = DialogPngNameFix(self)
+        dialog_png_name_fix.exec()
+
