@@ -25,5 +25,7 @@ pyside6-rcc Resources/resources.qrc -o res_rc.py
 pyside6-designer
 
 # 打包命令
-pyinstaller --onefile --console --add-data "Resource/logo-128x128.png;Resource" gui_main.py
-pyinstaller --console --add-data "Resource/logo-128x128.png;Resource" gui_main.py
+# pyinstaller --onefile --console --add-data "Resource/logo-128x128.png;Resource" gui_main.py
+
+
+pyinstaller --console -i app_icon.ico --add-data "Resource/logo-128x128.png;Resource" --name="精灵动画工具" gui_main.py
