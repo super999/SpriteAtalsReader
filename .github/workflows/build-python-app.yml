@@ -33,7 +33,7 @@ jobs:
           pyinstaller --console -i app_icon.ico --add-data "Resource/logo-128x128.png;Resource" --name="精灵动画工具" gui_main.py
 
       - name: Upload artifact
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v4
         with:
           name: app
           path: dist/精灵动画工具/**
