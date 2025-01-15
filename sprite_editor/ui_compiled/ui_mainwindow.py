@@ -26,9 +26,6 @@ class Ui_MainWindow(object):
         if not MainWindow.objectName():
             MainWindow.setObjectName(u"MainWindow")
         MainWindow.resize(704, 737)
-        icon = QIcon()
-        icon.addFile(u"../../Resource/logo-128x128.png", QSize(), QIcon.Mode.Normal, QIcon.State.Off)
-        MainWindow.setWindowIcon(icon)
         self.actionname_fix = QAction(MainWindow)
         self.actionname_fix.setObjectName(u"actionname_fix")
         self.action_about_editor = QAction(MainWindow)

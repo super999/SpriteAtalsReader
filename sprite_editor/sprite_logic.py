@@ -17,10 +17,12 @@
 import json
 import logging
 import os
+import sys
 from typing import cast, List
 
 from PIL import Image, ImageDraw
 from PySide6.QtCore import QSettings
+from PySide6.QtGui import QIcon
 from PySide6.QtWidgets import (
     QMainWindow, QFileDialog, QMessageBox
 )
@@ -83,6 +85,17 @@ class JsonFileContainer(metaclass=Singleton):
         return json.dumps([file_path.__dict__ for file_path in self._json_file_paths])
 
 
+def get_resource_path(relative_path):
+    """获取资源文件的绝对路径，适用于打包和未打包状态"""
+    if hasattr(sys, '_MEIPASS'):
+        # PyInstaller 打包后的临时目录
+        base_path = sys._MEIPASS
+    else:
+        # 未打包时的目录
+        base_path = os.path.abspath(".")
+    return os.path.join(base_path, relative_path)
+
+
 class SpriteApp(QMainWindow):
     """主窗口，含UI与处理逻辑"""
     raw_dds_path: str
@@ -105,6 +118,10 @@ class SpriteApp(QMainWindow):
 
     def _initialize_ui(self):
         """初始化UI组件和信号槽连接"""
+        # 设置 icon图标 Resource/logo-128x128.png
+        icon_path = get_resource_path('Resource/logo-128x128.png')
+        logging.warning(f"icon_path: {icon_path}")
+        self.setWindowIcon(QIcon(icon_path))
         self.ui.lineEdit_json_dir.setText(self.json_file_dir_path)
         self.ui.lineEdit_dds_file.setText(self.raw_dds_path)
         self._connect_signals()
