@@ -31,6 +31,10 @@ class Ui_MainWindow(object):
         MainWindow.setWindowIcon(icon)
         self.actionname_fix = QAction(MainWindow)
         self.actionname_fix.setObjectName(u"actionname_fix")
+        self.action_about_editor = QAction(MainWindow)
+        self.action_about_editor.setObjectName(u"action_about_editor")
+        self.action_product_info = QAction(MainWindow)
+        self.action_product_info.setObjectName(u"action_product_info")
         self.centralwidget = QWidget(MainWindow)
         self.centralwidget.setObjectName(u"centralwidget")
         self.centralwidget.setMaximumSize(QSize(16777215, 16777215))
@@ -263,13 +267,18 @@ class Ui_MainWindow(object):
         self.menubar.setGeometry(QRect(0, 0, 704, 33))
         self.menu = QMenu(self.menubar)
         self.menu.setObjectName(u"menu")
+        self.menu_2 = QMenu(self.menubar)
+        self.menu_2.setObjectName(u"menu_2")
         MainWindow.setMenuBar(self.menubar)
         self.statusbar = QStatusBar(MainWindow)
         self.statusbar.setObjectName(u"statusbar")
         MainWindow.setStatusBar(self.statusbar)
 
         self.menubar.addAction(self.menu.menuAction())
+        self.menubar.addAction(self.menu_2.menuAction())
         self.menu.addAction(self.actionname_fix)
+        self.menu_2.addAction(self.action_about_editor)
+        self.menu_2.addAction(self.action_product_info)
 
         self.retranslateUi(MainWindow)
 
@@ -279,6 +288,8 @@ class Ui_MainWindow(object):
     def retranslateUi(self, MainWindow):
         MainWindow.setWindowTitle(QCoreApplication.translate("MainWindow", u"Sprite\u5904\u7406\u7a0b\u5e8f - PySide6\u793a\u4f8b", None))
         self.actionname_fix.setText(QCoreApplication.translate("MainWindow", u"\u6279\u91cf\u91cd\u547d\u540d", None))
+        self.action_about_editor.setText(QCoreApplication.translate("MainWindow", u"\u4f5c\u8005\u4fe1\u606f", None))
+        self.action_product_info.setText(QCoreApplication.translate("MainWindow", u"\u5de5\u5177\u8bf4\u660e", None))
         self.pushButton_select_json_dir.setText(QCoreApplication.translate("MainWindow", u"\u9009\u62e9Json\u76ee\u5f55", None))
         self.lineEdit_json_dir.setPlaceholderText(QCoreApplication.translate("MainWindow", u"\u5728\u6b64\u5904\u8f93\u5165\u6216\u70b9\u51fb\u53f3\u4fa7\u6309\u94ae\u9009\u62e9 Json \u76ee\u5f55", None))
         self.pushButton_select_dds_file.setText(QCoreApplication.translate("MainWindow", u"\u9009\u62e9dds\u6587\u4ef6", None))
@@ -301,5 +312,6 @@ class Ui_MainWindow(object):
         self.clearFileButton.setText(QCoreApplication.translate("MainWindow", u"Clear All", None))
         self.removeFileButton.setText(QCoreApplication.translate("MainWindow", u"Remove Selected", None))
         self.menu.setTitle(QCoreApplication.translate("MainWindow", u"\u5de5\u5177", None))
+        self.menu_2.setTitle(QCoreApplication.translate("MainWindow", u"\u5e2e\u52a9", None))
     # retranslateUi
 

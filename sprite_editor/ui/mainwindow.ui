@@ -526,12 +526,30 @@
     </property>
     <addaction name="actionname_fix"/>
    </widget>
+   <widget class="QMenu" name="menu_2">
+    <property name="title">
+     <string>帮助</string>
+    </property>
+    <addaction name="action_about_editor"/>
+    <addaction name="action_product_info"/>
+   </widget>
    <addaction name="menu"/>
+   <addaction name="menu_2"/>
   </widget>
   <widget class="QStatusBar" name="statusbar"/>
   <action name="actionname_fix">
    <property name="text">
     <string>批量重命名</string>
+   </property>
+  </action>
+  <action name="action_about_editor">
+   <property name="text">
+    <string>作者信息</string>
+   </property>
+  </action>
+  <action name="action_product_info">
+   <property name="text">
+    <string>工具说明</string>
    </property>
   </action>
  </widget>
