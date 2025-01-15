@@ -17,7 +17,7 @@
 import json
 import logging
 import os
-from typing import cast
+from typing import cast, List
 
 from PIL import Image, ImageDraw
 from PySide6.QtCore import QSettings
@@ -25,6 +25,7 @@ from PySide6.QtWidgets import (
     QMainWindow, QFileDialog, QMessageBox
 )
 
+from core_lib.patterns.singleton_def import Singleton
 from sprite_editor.dialog_png_name_fix import DialogPngNameFix
 from sprite_editor.ui_compiled.ui_mainwindow import Ui_MainWindow
 
@@ -52,9 +53,34 @@ class CanvasConfig:
 canvas_config = CanvasConfig()
 
 
-class JsonFileContainer:
+class FilePath:
+    def __init__(self, file_path: str, relative_path: str):
+        self.file_path = file_path
+        self.relative_path = relative_path
+
+
+class JsonFileContainer(metaclass=Singleton):
+    _json_file_paths: list[FilePath]
+
     def __init__(self):
-        self.json_file_paths = []
+        self._json_file_paths = []
+
+    # 只读属性
+    def get_json_file_paths(self) -> List[FilePath]:
+        return self._json_file_paths
+
+    def clear_json_file_paths(self):
+        self._json_file_paths.clear()
+
+    def add_file_path(self, file_path: str, relative_path: str):
+        # 先判断是否已经存在
+        for json_file_path in self._json_file_paths:
+            if json_file_path.file_path == file_path:
+                return
+        self._json_file_paths.append(FilePath(file_path, relative_path))
+
+    def serialize_to_json_str(self):
+        return json.dumps([file_path.__dict__ for file_path in self._json_file_paths])
 
 
 class SpriteApp(QMainWindow):
@@ -82,6 +108,10 @@ class SpriteApp(QMainWindow):
         self.ui.lineEdit_json_dir.setText(self.json_file_dir_path)
         self.ui.lineEdit_dds_file.setText(self.raw_dds_path)
         self._connect_signals()
+        if self.json_file_dir_path and len(JsonFileContainer().get_json_file_paths()) == 0:
+            self._collect_json_files()
+        if len(JsonFileContainer().get_json_file_paths()) > 0:
+            self.refresh_json_file_paths()
 
     def _connect_signals(self):
         """连接信号和槽"""
@@ -89,18 +119,30 @@ class SpriteApp(QMainWindow):
         self.ui.pushButton_select_json_dir.clicked.connect(self.on_select_json_dir)
         self.ui.pushButton_select_dds_file.clicked.connect(self.on_select_dds_file)
         self.ui.pushButton_open_output_dir.clicked.connect(self.on_open_output_dir)
+        self.ui.addFileButton.clicked.connect(self.on_add_json_file)
+        self.ui.removeFileButton.clicked.connect(self.on_remove_json_file)
+        self.ui.clearFileButton.clicked.connect(self.on_clear_json_files)
         #
         self.ui.actionname_fix.triggered.connect(self.on_open_name_fix_window)
+        #
+        self.ui.lineEdit_json_dir.textChanged.connect(self.on_lineEdit_json_dir_textChanged)
 
     def load_settings(self):
         """从 QSettings 中加载上一次的目录路径和dds文件路径"""
         self.json_file_dir_path = cast(str, self.settings.value("json_file_dir_path", ""))
         self.raw_dds_path = cast(str, self.settings.value("raw_dds_path", ""))
+        json_str = cast(str, self.settings.value("json_file_paths", ""))
+        if json_str:
+            json_obj = json.loads(json_str)
+            for file_path in json_obj:
+                JsonFileContainer().add_file_path(file_path['file_path'], file_path['relative_path'])
 
     def save_settings(self):
         """把当前的目录和文件路径写入 QSettings"""
         self.settings.setValue("json_file_dir_path", self.json_file_dir_path)
         self.settings.setValue("raw_dds_path", self.raw_dds_path)
+        json_str = JsonFileContainer().serialize_to_json_str()
+        self.settings.setValue("json_file_paths", json_str)
 
     def on_select_json_dir(self):
         """点击按钮 - 选择json文件夹"""
@@ -108,18 +150,26 @@ class SpriteApp(QMainWindow):
         if directory:
             self.json_file_dir_path = directory
             self.ui.lineEdit_json_dir.setText(directory)
+            self._collect_json_files()
+            self.refresh_json_file_paths()
+            self.save_settings()
 
     def on_select_dds_file(self):
         """点击按钮 - 选择dds文件"""
         file_path, _ = QFileDialog.getOpenFileName(self, "选择dds文件", self.raw_dds_path or "",
-                                                   "DDS Files (*.dds);PNG Files (*.png);;All Files (*)")
+                                                   "DDS Files (*.dds);;PNG Files (*.png);;All Files (*)")
         if file_path:
             self.raw_dds_path = file_path
             self.ui.lineEdit_dds_file.setText(file_path)
+            self.save_settings()
 
     def on_open_output_dir(self):
         """点击按钮 - 打开输出目录"""
-        output_dir = os.path.join(os.path.dirname(self.json_file_dir_path), "output")
+        output_dir = os.path.join(os.getcwd(), 'output')
+        # 检查文件夹是否存在
+        if not os.path.exists(output_dir):
+            logging.warning("输出文件夹不存在！")
+            return
         os.startfile(output_dir)
 
     def on_start(self):
@@ -161,6 +211,7 @@ class SpriteApp(QMainWindow):
     def _process_files(self):
         """处理文件"""
         try:
+            self._collect_json_files()
             self.read_dds()
             self.adv_read_sprite()
             self.save_whole_image('')
@@ -190,15 +241,26 @@ class SpriteApp(QMainWindow):
             self.rd = rd
             self.r_x, self.r_y, self.r_w, self.r_h = rect['m_X'], rect['m_Y'], rect['m_Width'], rect['m_Height']
 
-    def adv_read_sprite(self):
-        """遍历并处理目录下的Json信息，切割并保存精灵图"""
+    def _collect_json_files(self):
+        """遍历目录并收集所有的Json文件路径"""
+        if len(JsonFileContainer().get_json_file_paths()) > 0:
+            logging.warning("已经收集过Json文件路径，跳过")
+            # 刷新 文件列表
+            self.refresh_json_file_paths()
+            return
         for root, dirs, files in os.walk(self.json_file_dir_path):
             relative_path = os.path.relpath(root, self.json_file_dir_path)
             for file in files:
                 file_path = os.path.join(root, file)
                 if not file_path.lower().endswith(".json"):
                     continue
-                self._process_json_file(file_path, relative_path)
+                JsonFileContainer().get_json_file_paths().append(FilePath(file_path, relative_path))
+
+    def adv_read_sprite(self):
+        """遍历并处理目录下的Json信息，切割并保存精灵图"""
+        # self._collect_json_files()
+        for json_file in JsonFileContainer().get_json_file_paths():
+            self._process_json_file(json_file.file_path, json_file.relative_path)
 
     def _process_json_file(self, file_path: str, relative_path: str):
         """处理单个Json文件"""
@@ -230,8 +292,7 @@ class SpriteApp(QMainWindow):
             sprite_img, int(center_x - sprite_info.r_w * sprite_info.pivot['m_X']),
             int(center_y - sprite_info.r_h * sprite_info.pivot['m_Y']),
             [[vertex for vertex in shape] for shape in sprite_info.physics_shape],
-            is_center_align, relative_path, sprite_info
-        )
+            is_center_align, relative_path)
         os.makedirs(relative_output_folder, exist_ok=True)
         sprite_output_path = os.path.join(relative_output_folder, f'{sprite_info.name}.png')
         save_img.save(sprite_output_path)
@@ -277,8 +338,7 @@ class SpriteApp(QMainWindow):
             sprite_img = sprite_img.transpose(rotation_methods[rotation_value])
         return sprite_img
 
-    def _create_canvas_and_draw(self, sprite_img, paste_x, paste_y, all_shapes, is_center_align, relative_path,
-                                sprite_info):
+    def _create_canvas_and_draw(self, sprite_img, paste_x, paste_y, all_shapes, is_center_align, relative_path):
         if is_center_align:
             canvas_width = canvas_config.canvas_width
             canvas_height = canvas_config.canvas_height
@@ -291,15 +351,17 @@ class SpriteApp(QMainWindow):
                 canvas_draw.line([0, canvas_height // 2, canvas_width, canvas_height // 2], fill="red")
 
             if self.enable_draw_shape:
+                shape_ref_width = canvas_config.shape_ref_width
+                shape_ref_height = canvas_config.shape_ref_height
                 canvas_draw = ImageDraw.Draw(new_canvas)
                 for shape in all_shapes:
                     for i in range(len(shape)):
                         cur_vertex = shape[i]
                         next_vertex = shape[(i + 1) % len(shape)]
-                        start_x = cur_vertex['m_X'] * canvas_width + canvas_width // 2
-                        start_y = cur_vertex['m_Y'] * canvas_height + canvas_height // 2
-                        end_x = next_vertex['m_X'] * canvas_width + canvas_width // 2
-                        end_y = next_vertex['m_Y'] * canvas_height + canvas_height // 2
+                        start_x = cur_vertex['m_X'] * shape_ref_width + canvas_width // 2
+                        start_y = cur_vertex['m_Y'] * shape_ref_height + canvas_height // 2
+                        end_x = next_vertex['m_X'] * shape_ref_width + canvas_width // 2
+                        end_y = next_vertex['m_Y'] * shape_ref_height + canvas_height // 2
                         canvas_draw.line([start_x, start_y, end_x, end_y], fill="green")
             save_img = new_canvas.transpose(Image.Transpose.FLIP_TOP_BOTTOM)
             relative_output_folder = os.path.join('output_paste', relative_path)
@@ -322,3 +384,40 @@ class SpriteApp(QMainWindow):
         dialog_png_name_fix = DialogPngNameFix(self)
         dialog_png_name_fix.exec()
 
+    def refresh_json_file_paths(self):
+        self.ui.listWidget_file_list.clear()
+        for file_path in JsonFileContainer().get_json_file_paths():
+            self.ui.listWidget_file_list.addItem(file_path.file_path)
+
+    def on_add_json_file(self):
+        """添加Json文件"""
+        file_paths, _ = QFileDialog.getOpenFileNames(self, "选择Json文件", self.json_file_dir_path or "",
+                                                     "Json Files (*.json);;All Files (*)")
+        if file_paths:
+            container = JsonFileContainer()
+            for file_path in file_paths:
+                root = os.path.dirname(file_path)
+                relative_path = os.path.relpath(root, self.json_file_dir_path)
+                container.add_file_path(file_path, relative_path)
+            self.refresh_json_file_paths()
+            self.save_settings()
+
+    def on_remove_json_file(self):
+        """移除Json文件"""
+        selected_item = self.ui.listWidget_file_list.currentItem()
+        if selected_item:
+            file_path = selected_item.text()
+            JsonFileContainer()._json_file_paths = [file for file in JsonFileContainer().get_json_file_paths() if
+                                                    file.file_path != file_path]
+            self.refresh_json_file_paths()
+            self.save_settings()
+
+    def on_clear_json_files(self):
+        """清空Json文件"""
+        JsonFileContainer().clear_json_file_paths()
+        self.refresh_json_file_paths()
+        self.save_settings()
+
+    def on_lineEdit_json_dir_textChanged(self):
+        self.json_file_dir_path = self.ui.lineEdit_json_dir.text().strip()
+        self.save_settings()

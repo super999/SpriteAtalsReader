@@ -26,6 +26,9 @@ class Ui_MainWindow(object):
         if not MainWindow.objectName():
             MainWindow.setObjectName(u"MainWindow")
         MainWindow.resize(704, 737)
+        icon = QIcon()
+        icon.addFile(u"../../Resource/logo-128x128.png", QSize(), QIcon.Mode.Normal, QIcon.State.Off)
+        MainWindow.setWindowIcon(icon)
         self.actionname_fix = QAction(MainWindow)
         self.actionname_fix.setObjectName(u"actionname_fix")
         self.centralwidget = QWidget(MainWindow)
@@ -211,10 +214,10 @@ class Ui_MainWindow(object):
         self.horizontalLayout_8.setSpacing(60)
         self.horizontalLayout_8.setObjectName(u"horizontalLayout_8")
         self.horizontalLayout_8.setContentsMargins(0, 0, 0, 0)
-        self.listWidget = QListWidget(self.widget_2)
-        self.listWidget.setObjectName(u"listWidget")
+        self.listWidget_file_list = QListWidget(self.widget_2)
+        self.listWidget_file_list.setObjectName(u"listWidget_file_list")
 
-        self.horizontalLayout_8.addWidget(self.listWidget)
+        self.horizontalLayout_8.addWidget(self.listWidget_file_list)
 
 
         self.verticalLayout.addWidget(self.widget_2)

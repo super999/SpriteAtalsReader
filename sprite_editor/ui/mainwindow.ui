@@ -13,6 +13,10 @@
   <property name="windowTitle">
    <string>Sprite处理程序 - PySide6示例</string>
   </property>
+  <property name="windowIcon">
+   <iconset>
+    <normaloff>../../Resource/logo-128x128.png</normaloff>../../Resource/logo-128x128.png</iconset>
+  </property>
   <widget class="QWidget" name="centralwidget">
    <property name="maximumSize">
     <size>
@@ -418,7 +422,7 @@
            <number>0</number>
           </property>
           <item>
-           <widget class="QListWidget" name="listWidget"/>
+           <widget class="QListWidget" name="listWidget_file_list"/>
           </item>
          </layout>
         </widget>
