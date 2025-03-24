@@ -32,6 +32,8 @@ class Ui_MainWindow(object):
         self.action_about_editor.setObjectName(u"action_about_editor")
         self.action_product_info = QAction(MainWindow)
         self.action_product_info.setObjectName(u"action_product_info")
+        self.action_rotate_fix = QAction(MainWindow)
+        self.action_rotate_fix.setObjectName(u"action_rotate_fix")
         self.centralwidget = QWidget(MainWindow)
         self.centralwidget.setObjectName(u"centralwidget")
         self.centralwidget.setMaximumSize(QSize(16777215, 16777215))
@@ -274,6 +276,7 @@ class Ui_MainWindow(object):
         self.menubar.addAction(self.menu.menuAction())
         self.menubar.addAction(self.menu_2.menuAction())
         self.menu.addAction(self.actionname_fix)
+        self.menu.addAction(self.action_rotate_fix)
         self.menu_2.addAction(self.action_about_editor)
         self.menu_2.addAction(self.action_product_info)
 
@@ -284,9 +287,10 @@ class Ui_MainWindow(object):
 
     def retranslateUi(self, MainWindow):
         MainWindow.setWindowTitle(QCoreApplication.translate("MainWindow", u"Sprite\u5904\u7406\u7a0b\u5e8f - PySide6\u793a\u4f8b", None))
-        self.actionname_fix.setText(QCoreApplication.translate("MainWindow", u"\u6279\u91cf\u91cd\u547d\u540d", None))
+        self.actionname_fix.setText(QCoreApplication.translate("MainWindow", u"PNG\u6279\u91cf\u91cd\u547d\u540d", None))
         self.action_about_editor.setText(QCoreApplication.translate("MainWindow", u"\u4f5c\u8005\u4fe1\u606f", None))
         self.action_product_info.setText(QCoreApplication.translate("MainWindow", u"\u5de5\u5177\u8bf4\u660e", None))
+        self.action_rotate_fix.setText(QCoreApplication.translate("MainWindow", u"PNG\u56fe\u50cf\u65cb\u8f6c\u4fee\u590d", None))
         self.pushButton_select_json_dir.setText(QCoreApplication.translate("MainWindow", u"\u9009\u62e9Json\u76ee\u5f55", None))
         self.lineEdit_json_dir.setPlaceholderText(QCoreApplication.translate("MainWindow", u"\u5728\u6b64\u5904\u8f93\u5165\u6216\u70b9\u51fb\u53f3\u4fa7\u6309\u94ae\u9009\u62e9 Json \u76ee\u5f55", None))
         self.pushButton_select_dds_file.setText(QCoreApplication.translate("MainWindow", u"\u9009\u62e9dds\u6587\u4ef6", None))

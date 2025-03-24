@@ -29,6 +29,7 @@ from PySide6.QtWidgets import (
 
 from core_lib.patterns.singleton_def import Singleton
 from sprite_editor.dialog_png_name_fix import DialogPngNameFix
+from sprite_editor.dialog_png_direction_fix import DialogPngDirectionFix
 from sprite_editor.ui_compiled.ui_mainwindow import Ui_MainWindow
 
 
@@ -141,6 +142,7 @@ class SpriteApp(QMainWindow):
         self.ui.clearFileButton.clicked.connect(self.on_clear_json_files)
         #
         self.ui.actionname_fix.triggered.connect(self.on_open_name_fix_window)
+        self.ui.action_rotate_fix.triggered.connect(self.on_open_rotate_fix_window)
         #
         self.ui.lineEdit_json_dir.textChanged.connect(self.on_lineEdit_json_dir_textChanged)
 
@@ -400,6 +402,11 @@ class SpriteApp(QMainWindow):
         """打开名字修正窗口"""
         dialog_png_name_fix = DialogPngNameFix(self)
         dialog_png_name_fix.exec()
+
+    def on_open_rotate_fix_window(self):
+        """打开旋转修正窗口"""
+        dialog_png_rotate_fix = DialogPngDirectionFix(self)
+        dialog_png_rotate_fix.exec()
 
     def refresh_json_file_paths(self):
         self.ui.listWidget_file_list.clear()

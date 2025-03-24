@@ -19,6 +19,8 @@ pyside6-uic sprite_editor/ui/mainwindow.ui -o sprite_editor/ui_compiled/ui_mainw
 
 pyside6-uic sprite_editor/ui/dialog_png_name_fix.ui -o sprite_editor/ui_compiled/ui_dialog_png_name_fix.py
 
+pyside6-uic sprite_editor/ui/dialog_png_direction_fix.ui -o sprite_editor/ui_compiled/ui_dialog_png_direction_fix.py
+
 pyside6-rcc Resources/resources.qrc -o res_rc.py
 
 # 编辑

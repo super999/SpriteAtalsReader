@@ -521,6 +521,7 @@
      <string>工具</string>
     </property>
     <addaction name="actionname_fix"/>
+    <addaction name="action_rotate_fix"/>
    </widget>
    <widget class="QMenu" name="menu_2">
     <property name="title">
@@ -535,7 +536,7 @@
   <widget class="QStatusBar" name="statusbar"/>
   <action name="actionname_fix">
    <property name="text">
-    <string>批量重命名</string>
+    <string>PNG批量重命名</string>
    </property>
   </action>
   <action name="action_about_editor">
@@ -546,6 +547,11 @@
   <action name="action_product_info">
    <property name="text">
     <string>工具说明</string>
+   </property>
+  </action>
+  <action name="action_rotate_fix">
+   <property name="text">
+    <string>PNG图像旋转修复</string>
    </property>
   </action>
  </widget>

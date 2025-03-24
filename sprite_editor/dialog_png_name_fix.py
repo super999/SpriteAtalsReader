@@ -9,14 +9,8 @@ import os
 from PySide6.QtCore import QSettings
 from PySide6.QtWidgets import QDialog, QFileDialog, QMessageBox
 
+from sprite_editor.png_file_info import PngFileInfo
 from sprite_editor.ui_compiled.ui_dialog_png_name_fix import Ui_DialogPngNameFix
-
-
-class PngFileInfo:
-    def __init__(self, name, path):
-        self.name = name  # 文件名
-        self.path = path  # 文件路径
-        self.new_name = ''  # 新文件名
 
 
 class DialogPngNameFix(QDialog):
