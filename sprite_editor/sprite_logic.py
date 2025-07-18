@@ -386,6 +386,8 @@ class SpriteApp(QMainWindow):
             relative_output_folder = os.path.join('output_paste', relative_path)
         else:
             save_img = sprite_img
+            # 对 save_img 进行上下翻转
+            save_img = save_img.transpose(Image.Transpose.FLIP_TOP_BOTTOM)
             relative_output_folder = os.path.join('output_keep', relative_path)
         return save_img, relative_output_folder
 

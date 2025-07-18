@@ -19,13 +19,14 @@ from PySide6.QtGui import (QAction, QBrush, QColor, QConicalGradient,
 from PySide6.QtWidgets import (QApplication, QCheckBox, QHBoxLayout, QLabel,
     QLineEdit, QListWidget, QListWidgetItem, QMainWindow,
     QMenu, QMenuBar, QPushButton, QSizePolicy,
-    QSpacerItem, QStatusBar, QVBoxLayout, QWidget)
+    QSpacerItem, QStatusBar, QTextEdit, QVBoxLayout,
+    QWidget)
 
 class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
         if not MainWindow.objectName():
             MainWindow.setObjectName(u"MainWindow")
-        MainWindow.resize(704, 737)
+        MainWindow.resize(809, 911)
         self.actionname_fix = QAction(MainWindow)
         self.actionname_fix.setObjectName(u"actionname_fix")
         self.action_about_editor = QAction(MainWindow)
@@ -73,6 +74,26 @@ class Ui_MainWindow(object):
 
 
         self.verticalLayout_2.addLayout(self.horizontalLayout)
+
+        self.widget_json_dds = QWidget(self.centralwidget)
+        self.widget_json_dds.setObjectName(u"widget_json_dds")
+        self.widget_json_dds.setMinimumSize(QSize(0, 200))
+        self.verticalLayout_3 = QVBoxLayout(self.widget_json_dds)
+        self.verticalLayout_3.setSpacing(2)
+        self.verticalLayout_3.setObjectName(u"verticalLayout_3")
+        self.verticalLayout_3.setContentsMargins(2, 2, 2, 2)
+        self.checkBoxUseDDsJson = QCheckBox(self.widget_json_dds)
+        self.checkBoxUseDDsJson.setObjectName(u"checkBoxUseDDsJson")
+
+        self.verticalLayout_3.addWidget(self.checkBoxUseDDsJson)
+
+        self.textEdit = QTextEdit(self.widget_json_dds)
+        self.textEdit.setObjectName(u"textEdit")
+
+        self.verticalLayout_3.addWidget(self.textEdit)
+
+
+        self.verticalLayout_2.addWidget(self.widget_json_dds)
 
         self.horizontalLayout_4 = QHBoxLayout()
         self.horizontalLayout_4.setObjectName(u"horizontalLayout_4")
@@ -263,7 +284,7 @@ class Ui_MainWindow(object):
         MainWindow.setCentralWidget(self.centralwidget)
         self.menubar = QMenuBar(MainWindow)
         self.menubar.setObjectName(u"menubar")
-        self.menubar.setGeometry(QRect(0, 0, 704, 33))
+        self.menubar.setGeometry(QRect(0, 0, 809, 33))
         self.menu = QMenu(self.menubar)
         self.menu.setObjectName(u"menu")
         self.menu_2 = QMenu(self.menubar)
@@ -295,6 +316,7 @@ class Ui_MainWindow(object):
         self.lineEdit_json_dir.setPlaceholderText(QCoreApplication.translate("MainWindow", u"\u5728\u6b64\u5904\u8f93\u5165\u6216\u70b9\u51fb\u53f3\u4fa7\u6309\u94ae\u9009\u62e9 Json \u76ee\u5f55", None))
         self.pushButton_select_dds_file.setText(QCoreApplication.translate("MainWindow", u"\u9009\u62e9dds\u6587\u4ef6", None))
         self.lineEdit_dds_file.setPlaceholderText(QCoreApplication.translate("MainWindow", u"\u5728\u6b64\u5904\u8f93\u5165\u6216\u70b9\u51fb\u53f3\u4fa7\u6309\u94ae\u9009\u62e9 dds \u6587\u4ef6", None))
+        self.checkBoxUseDDsJson.setText(QCoreApplication.translate("MainWindow", u"\u4f7f\u7528JsonDDS", None))
         self.checkBoxCenterAndResize256.setText(QCoreApplication.translate("MainWindow", u"\u4e2d\u5fc3\u5bf9\u9f50\u6269\u5c55", None))
         self.checkBoxDrawAxis.setText(QCoreApplication.translate("MainWindow", u"\u7ed8\u5236\u5bf9\u9f50\u5750\u6807\u8f74", None))
         self.checkBoxDrawBorderAndOrigin.setText(QCoreApplication.translate("MainWindow", u"\u7ed8\u5236\u5916\u6846\u548c\u8d77\u59cb\u70b9", None))
