@@ -75,8 +75,7 @@ class DialogPngDirectionFix(QDialog):
             image = image.transpose(rotation_methods)
             image.save(png_file.path)
             fix_image_count += 1
-        QMessageBox.information(self, '提示',
-                                f'共检查到{len(all_name)}个文件, 其中{fix_image_count}个文件已经翻转修复完成')
+        QMessageBox.information(self, '提示', f'共检查到{len(all_name)}个文件, 其中{fix_image_count}个文件已经翻转修复完成')
 
     def _get_rotation_methods(self):
         if self.ui.checkBox_flip_left_right.isChecked():
